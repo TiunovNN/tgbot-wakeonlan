@@ -92,7 +92,11 @@ async def register(message: types.Message):
         await message.answer('Не пытайся меня обмануть')
         return
 
-    user_data = settings.DB.get(message.contact.phone_number)
+    phone_number = message.contact.phone_number
+    if not phone_number.startswith('+'):
+        phone_number = f'+{phone_number}'
+
+    user_data = settings.DB.get(phone_number)
     if not user_data:
         data = await state.get_data()
         data['fraud'] = data.setdefault('fraud', 0) + 1

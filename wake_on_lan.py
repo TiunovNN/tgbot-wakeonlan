@@ -1,6 +1,7 @@
 import asyncio
 import pathlib
 import socket
+import sys
 import warnings
 
 import settings
@@ -187,11 +188,15 @@ async def connect(addr):
     else:
         family = 0
 
+    kwargs = {}
+    if sys.platform == 'linux':
+        kwargs['allow_broadcast'] = True
+
     transport, protocol = await loop.create_datagram_endpoint(
         lambda: Protocol(recvq, excq, drained),
         remote_addr=addr,
         family=family,
-        allow_broadcast=True,
+        **kwargs,
     )
 
     return DatagramClient(transport, recvq, excq, drained)
