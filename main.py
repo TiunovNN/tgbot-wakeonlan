@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-import asyncio
 import logging
+from logging.handlers import TimedRotatingFileHandler
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.files import JSONStorage
@@ -20,15 +20,13 @@ log_format = (
 logging.basicConfig(
     level=logging.INFO,
     format=log_format,
-    filename=settings.LOG_FILE,
+    handlers=[TimedRotatingFileHandler(settings.LOG_FILE, when='d')],
 )
 
 # Initialize bot and dispatcher
 bot = Bot(token=settings.API_TOKEN)
 dp = Dispatcher(bot, storage=JSONStorage('db.json'))
 dp.middleware.setup(LoggingMiddleware())
-
-current_users = {}
 
 
 class UserState(StatesGroup):
@@ -52,11 +50,6 @@ def start_menu():
     )
     keyboard.add(types.KeyboardButton('/start'))
     return keyboard
-
-
-async def await_fro_wake(message: types.Message, computer):
-    await asyncio.sleep(5)
-    await message.answer(f'Компьютер {computer} разбужен', reply_markup=make_menu())
 
 
 @dp.message_handler(commands=['start'])
@@ -127,12 +120,13 @@ async def wakeup(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(state='*', content_types=ContentType.TEXT)
-async def unknown_user(message: types.Message, state: FSMContext):
+async def unknown_command(message: types.Message, state: FSMContext):
     user_state = await state.get_state()
     logging.error(f'unknown user state: {user_state}')
     if user_state == UserState.REGISTERED.state:
-        await message.answer('', reply_markup=make_menu())
+        await message.answer('Доступны только команды из меню', reply_markup=make_menu())
         return
+
     await message.answer('Мы не знакомы', reply_markup=start_menu())
 
 
